@@ -1,9 +1,14 @@
 import os
+from os.path import join, dirname
+from dotenv import load_dotenv
 
 from flask import Flask, session, render_template, request
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 app = Flask(__name__)
 
