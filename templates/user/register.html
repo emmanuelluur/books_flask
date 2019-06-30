@@ -1,0 +1,22 @@
+{% extends "./base.html" %}
+{% block content %}
+<section class="row space">
+    <article class="col-sm-6">
+        <form action=" {{ url_for("save_user") }} " method="post" class="form">
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" class="form-control" name="name" id="name" placeholder="Type your name" autofocus required>
+            </div>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" class="form-control" name="username" id="username" placeholder="Type your Username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="pasword" class="form-control" name="password" id="password" placeholder="Type your password" required>
+            </div>
+            <button type="submit" class="btn btn-success"> Save </button>
+        </form>
+    </article>
+</section>
+{% endblock content %}
