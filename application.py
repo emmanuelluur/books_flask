@@ -34,7 +34,7 @@ def index():
     # if id_user exist render main page
     if 'id_user' in session:
         name =  session['name']
-        return f"Hello wordl! {name}"
+        return render_template("index.html", title="Home", name = name)
     else:
         return render_template("login/login.html", title="Login", log_message = "")
 
@@ -86,6 +86,7 @@ def login():
             return redirect("/", code=302)
         else:
             return render_template("login/login.html", log_message="Error login", class_ = 'alert alert-danger')
+
     return render_template("login/login.html", title="Login", log_message = "")
 
 
@@ -93,3 +94,15 @@ def login():
 def logout():
     session.clear()
     return redirect("/", code=302)
+
+@app.route("/search/book", methods = ["POST"])
+def search_book():
+    name =  session['name']
+    search = escape(request.form.get('search'))
+    book = db.execute(f"SELECT * FROM tbl_books WHERE (isbn LIKE '%{search}%') OR (title LIKE '%{search}%') OR (author LIKE '%{search}%')   LIMIT 50").fetchall()
+
+    if book is None:
+        return render_template("index.html", title="Home", name = name)
+    
+    return render_template("index.html", title="Home", name = name, books = book)
+
