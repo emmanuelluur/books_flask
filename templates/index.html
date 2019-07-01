@@ -45,7 +45,7 @@
                     <td> {{ book['title'] }} </td>
                     <td> {{ book['author'] }} </td>
                     <td> {{ book['isbn'] }} </td>
-                    <td> <a href="#"> See </a> </td>
+                    <td> <a href={{ url_for('bookPage' ,book_id=book['book_id']) }}> See </a> </td>
                 </tr>
                 {% endfor %}
             </tbody>

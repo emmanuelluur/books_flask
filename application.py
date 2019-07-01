@@ -2,7 +2,7 @@ import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 
-from flask import Flask, session, render_template, request, escape, redirect
+from flask import Flask, session, render_template, request, escape, redirect, jsonify
 from flask_session import Session
 from flask_bcrypt import Bcrypt, generate_password_hash, check_password_hash
 
@@ -106,3 +106,19 @@ def search_book():
     
     return render_template("index.html", title="Home", name = name, books = book)
 
+#book page
+
+@app.route("/book/<book_id>")
+def bookPage(book_id):
+    book = book_id
+    result = db.execute(f"SELECT * FROM tbl_books WHERE book_id = '{book}'").fetchone()
+    
+    return render_template("book/book.html", title = "Book Page", books = result)
+
+
+@app.route("/api/<isbn>")
+def api(isbn):
+    book = isbn
+    result = db.execute(f"SELECT * FROM tbl_books WHERE isbn = '{book}'").fetchone()
+    data = {"title":result.title,"author":result.author,"year":result.year_book, "isbn":result.isbn}
+    return jsonify(data)

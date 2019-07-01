@@ -1,0 +1,37 @@
+{% extends "./base.html" %}
+
+{% block content %}
+<section class="row space">
+    <article class="col-sm-6">
+        <h3>Book Information</h3>
+        <hr>
+        {% if books %}
+        <p> <strong> Title </strong> {{ books['title'] }} </p>
+        <p> <strong> Author </strong> {{ books['author'] }} </p>
+        <p> <strong> Year </strong> {{ books['year_book'] }} </p>
+        <p> <strong> ISBN </strong> {{ books['isbn'] }} </p>
+        {% else %}
+        <div class="alert alert-danger">No Book Information</div>
+        {% endif %}
+        </ul>
+        <hr>
+        <p><strong>Write your review</strong></p>
+        <form action="">
+            <input type="hidden" name="id_book" value="{{ books['book_id'] }}">
+            <div class="form-group">
+                <label for="comment">Review</label>
+                <textarea name="review" id="review" class="form-control" cols="30" rows="10" required autofocus placeholder="Type your review"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="rate">Rate book (1-5)</label>
+                <input type="nubmer" class="form-control" name="rate" id="rate" min="1" max="5" value="1" required>
+            </div>
+            <button class="btn btn-success btn-lg btn-block">Send Review</button>
+        </form>
+    </article>
+    <article class="col-sm-4">
+        <h3>Reviews</h3>
+        <hr>
+    </article>
+</section>
+{% endblock content %}
