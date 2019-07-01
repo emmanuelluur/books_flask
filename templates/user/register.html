@@ -2,6 +2,7 @@
 {% block content %}
 <section class="row space">
     <article class="col-sm-6">
+        <h3>Register new user</h3>
         <form action=" {{ url_for("save_user") }} " method="post" class="form">
             <div class="form-group">
                 <label for="name">Name:</label>
@@ -15,7 +16,7 @@
                 <label for="password">Password:</label>
                 <input type="pasword" class="form-control" name="password" id="password" placeholder="Type your password" required>
             </div>
-            <button type="submit" class="btn btn-success"> Save </button>
+            <button type="submit" class="btn btn-success btn-lg btn-block"> Save </button>
         </form>
     </article>
 </section>
