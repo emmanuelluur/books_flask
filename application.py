@@ -2,7 +2,7 @@ import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 
-from flask import Flask, session, render_template, request, escape
+from flask import Flask, session, render_template, request, escape, redirect
 from flask_session import Session
 from flask_bcrypt import Bcrypt, generate_password_hash, check_password_hash
 
@@ -31,7 +31,12 @@ db = scoped_session(sessionmaker(bind=engine))
 
 @app.route("/")
 def index():
-    return render_template("login/login.html", title="Login")
+    # if id_user exist render main page
+    if 'id_user' in session:
+        name =  session['name']
+        return f"Hello wordl! {name}"
+    else:
+        return render_template("login/login.html", title="Login", log_message = "")
 
 # user register layout
 @app.route("/user/register")
@@ -45,18 +50,46 @@ def save_user():
     # Escape user inputs
     name = escape(request.form.get("name"))
     username = escape(request.form.get("username"))
-    password = escape(bcrypt.generate_password_hash(request.form.get("password")))
+    password = bcrypt.generate_password_hash(request.form.get("password")).decode('utf-8')
     # check username
-    users_qry = db.execute("SELECT * FROM tbl_user WHERE username = :username", {"username": username})
+    users_qry = db.execute(
+        "SELECT * FROM tbl_user WHERE username = :username", {"username": username})
     if users_qry.rowcount >= 1:
-        #render error message
+        # render error message
         message = f"User {name} exists"
         return render_template('user/message.html', message=message)
-    # if user doesn't exist save it 
+    # if user doesn't exist save it
     db.execute("INSERT INTO tbl_user (name, username, password) VALUES (:name, :username, :password)",
                {"name": name, "username": username, "password": password})
-    #Transaction sql
+    # Transaction sql
     db.commit()
-    #Render success message
+    # Render success message
     message = f"User {name} saved"
     return render_template('user/message.html', message=message)
+
+
+# sessions
+@app.route("/login", methods=['post', 'get'])
+def login():
+    if request.method == 'POST':
+        username = escape(request.form.get('username'))
+        password = request.form.get('password')
+        user = db.execute(
+            'SELECT * FROM tbl_user WHERE username = :username', {"username": username}).fetchone()
+        if user is None: # user doesn not found
+            return render_template("login/login.html", log_message="Error login", class_ = 'alert alert-danger')
+       
+        if check_password_hash(user["password"], password): # check password
+            # redirect home page and create session
+            session['id_user'] = user["user_id"]
+            session['name'] = user["name"]
+            return redirect("/", code=302)
+        else:
+            return render_template("login/login.html", log_message="Error login", class_ = 'alert alert-danger')
+    return render_template("login/login.html", title="Login", log_message = "")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/", code=302)
