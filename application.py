@@ -106,7 +106,7 @@ def search_book():
 
     if book is None:
         return render_template("index.html", title="Home", name=name)
-     
+
     return render_template("index.html", title="Home", name=name, books=book)
 
 # book page
@@ -114,16 +114,20 @@ def search_book():
 
 @app.route("/book/<book_id>")
 def bookPage(book_id):
+    name = session['name']
     book = book_id
     result = db.execute(
         f"SELECT * FROM tbl_books WHERE book_id = '{book}'").fetchone()
     rateB = db.execute(
-            f"SELECT * FROM tbl_reviews WHERE book_id = '{book}' ")
-
+        f"SELECT tbl_reviews.rate as rate, tbl_reviews.review as review, tbl_user.username as user  FROM tbl_reviews LEFT JOIN tbl_user ON tbl_reviews.user_id = tbl_user.user_id WHERE book_id = '{book}' ")
+    average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
+                         "book_id": book}).fetchone()
+    review_count = db.execute(
+        "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": book}).fetchone()
     if rateB.rowcount >= 1:
-        return render_template("book/book.html", title="Book Page", books=result, reviews = rateB)
-    
-    return render_template("book/book.html", title="Book Page", books=result)
+        return render_template("book/book.html", title="Book Page", name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
+
+    return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0)
 
 # Rate & Review Methods
 
@@ -140,13 +144,13 @@ def review():
         rateB = db.execute(
             f"SELECT * FROM tbl_reviews WHERE (user_id = '{user}') AND (book_id = '{book}')")
         if rateB.rowcount >= 1:
-            return render_template("book/message.html", title="Error", message= "User already rated this book")
+            return render_template("book/message.html", title="Error", message="User already rated this book")
         # Proceed to save review
-        db.execute("INSERT INTO tbl_reviews (book_id, user_id, rate, review) VALUES (:book_id, :user_id, :rate, :review)", 
-        {"book_id": int(book), "user_id": user, "rate": int(rate), "review": review})
+        db.execute("INSERT INTO tbl_reviews (book_id, user_id, rate, review) VALUES (:book_id, :user_id, :rate, :review)",
+                   {"book_id": int(book), "user_id": user, "rate": int(rate), "review": review})
         # Transaction sql
         db.commit()
-        return render_template("book/message.html", title="Success", message= "Done")
+        return render_template("book/message.html", title="Success", message="Done")
 # API Application
 
 
@@ -155,6 +159,18 @@ def api(isbn):
     book = isbn
     result = db.execute(
         f"SELECT * FROM tbl_books WHERE isbn = '{book}'").fetchone()
+    if result is None:
+        return "No book"
+    # average and count reviews
+    average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
+                         "book_id": result.book_id}).fetchone()
+    review_count = db.execute(
+        "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": result.book_id}).fetchone()
+
+  
+
     data = {"title": result.title, "author": result.author,
-            "year": result.year_book, "isbn": result.isbn}
+            "year": result.year_book, "isbn": result.isbn,
+            "average": float(average.res), "review_count": review_count.total}
+
     return jsonify(data)

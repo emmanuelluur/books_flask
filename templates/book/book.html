@@ -1,19 +1,69 @@
 {% extends "./base.html" %}
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">{{ name }}</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02"
+        aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
 
+    <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+            <li class="nav-item active">
+                <a class="nav-link" href="{{ url_for('index') }}">Home <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+
+        </ul>
+        <form class="form-inline my-2 my-lg-0" action="{{ url_for('search_book') }}" method="POST">
+            <input class="form-control mr-sm-2" type="search" name="search" placeholder="Search Book">
+            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+        </form>
+    </div>
+</nav>
+{% endblock navbar %}
 {% block content %}
 <section class="row space">
     <article class="col-sm-6">
         <h3>Book Information</h3>
-        <hr>
-        {% if books %}
-        <p> <strong> Title </strong> {{ books['title'] }} </p>
-        <p> <strong> Author </strong> {{ books['author'] }} </p>
-        <p> <strong> Year </strong> {{ books['year_book'] }} </p>
-        <p> <strong> ISBN </strong> {{ books['isbn'] }} </p>
-        {% else %}
-        <div class="alert alert-danger">No Book Information</div>
-        {% endif %}
-        </ul>
+        <table class="table">
+            <tbody>
+                {% if books %}
+                <tr>
+                    <td> <strong> Title </strong> </td>
+                    <td> {{ books['title'] }} </td>
+                </tr>
+                <tr>
+                    <td> <strong> Author </strong></td>
+                    <td> {{ books['author'] }} </td>
+                </tr>
+                <tr>
+                    <td> <strong> Year </strong></td>
+                    <td> {{ books['year_book'] }} </td>
+                </tr>
+                <tr>
+                    <td> <strong> ISBN </strong></td>
+                    <td> {{ books['isbn'] }} </td>
+                </tr>
+                <tr>
+                    <td> <strong> Average </strong></td>
+                    <td> <span class="badge badge-secondary"> {{ average }} </span> </td>
+                </tr>
+                <tr>
+                    <td> <strong> Reviews </strong> </td>
+                    <td> <span class="badge badge-secondary"> {{ review_count }} </span> </td>
+                </tr>
+
+
+                {% else %}
+                <div class="alert alert-danger">No Book Information</div>
+                {% endif %}
+            </tbody>
+
+        </table>
+
         <hr>
         <p><strong>Write your review</strong></p>
         <form action="{{ url_for('review') }}" method="POST">
@@ -35,10 +85,23 @@
         <hr>
         {% if reviews %}
         {% for review in reviews %}
-        <p>{{ review['review'] }}</p>
+        <p>
+            <div class="card text-center">
+                <div class="card-header">
+                    {{ review['user'] }} <span class="badge badge-secondary"> {{ review['rate'] }} </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Review</h5>
+                    <p class="card-text"> {{ review['review'] }} <p>
+                </div>
+            </div>
+        </p>
         {% endfor %}
         {% else %}
-        <div class="alert alert-info"> <p>No reviews yet</p> <p> <strong>Be first!</strong> </p></div>
+        <div class="alert alert-info">
+            <p>No reviews yet</p>
+            <p> <strong>Be first!</strong> </p>
+        </div>
         {% endif %}
     </article>
 </section>
