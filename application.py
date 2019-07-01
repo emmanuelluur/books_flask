@@ -2,7 +2,7 @@ import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 
-from flask import Flask, session, render_template, request
+from flask import Flask, session, render_template, request, escape
 from flask_session import Session
 from flask_bcrypt import Bcrypt, generate_password_hash, check_password_hash
 
@@ -42,15 +42,21 @@ def register_user():
 @app.route("/user/save", methods=["post"])
 def save_user():
     # Get Info.
-    name = request.form.get("name")
-    username = request.form.get("username")
-    password = bcrypt.generate_password_hash(request.form.get("password"))
+    # Escape user inputs
+    name = escape(request.form.get("name"))
+    username = escape(request.form.get("username"))
+    password = escape(bcrypt.generate_password_hash(request.form.get("password")))
     # check username
-    if db.execute("SELECT * FROM tbl_user WHERE username = :username", {"username": username}).rowcount >= 1:
+    users_qry = db.execute("SELECT * FROM tbl_user WHERE username = :username", {"username": username})
+    if users_qry.rowcount >= 1:
+        #render error message
         message = f"User {name} exists"
         return render_template('user/message.html', message=message)
+    # if user doesn't exist save it 
     db.execute("INSERT INTO tbl_user (name, username, password) VALUES (:name, :username, :password)",
                {"name": name, "username": username, "password": password})
+    #Transaction sql
     db.commit()
+    #Render success message
     message = f"User {name} saved"
     return render_template('user/message.html', message=message)
