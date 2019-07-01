@@ -2,7 +2,7 @@ import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 
-from flask import Flask, session, render_template, request, escape, redirect
+from flask import Flask, session, render_template, request, escape, redirect, jsonify
 from flask_session import Session
 from flask_bcrypt import Bcrypt, generate_password_hash, check_password_hash
 
@@ -33,10 +33,10 @@ db = scoped_session(sessionmaker(bind=engine))
 def index():
     # if id_user exist render main page
     if 'id_user' in session:
-        name =  session['name']
-        return render_template("index.html", title="Home", name = name)
+        name = session['name']
+        return render_template("index.html", title="Home", name=name)
     else:
-        return render_template("login/login.html", title="Login", log_message = "")
+        return render_template("login/login.html", title="Login", log_message="")
 
 # user register layout
 @app.route("/user/register")
@@ -50,7 +50,8 @@ def save_user():
     # Escape user inputs
     name = escape(request.form.get("name"))
     username = escape(request.form.get("username"))
-    password = bcrypt.generate_password_hash(request.form.get("password")).decode('utf-8')
+    password = bcrypt.generate_password_hash(
+        request.form.get("password")).decode('utf-8')
     # check username
     users_qry = db.execute(
         "SELECT * FROM tbl_user WHERE username = :username", {"username": username})
@@ -76,18 +77,18 @@ def login():
         password = request.form.get('password')
         user = db.execute(
             'SELECT * FROM tbl_user WHERE username = :username', {"username": username}).fetchone()
-        if user is None: # user doesn not found
-            return render_template("login/login.html", log_message="Error login", class_ = 'alert alert-danger')
-       
-        if check_password_hash(user["password"], password): # check password
+        if user is None:  # user doesn not found
+            return render_template("login/login.html", log_message="Error login", class_='alert alert-danger')
+
+        if check_password_hash(user["password"], password):  # check password
             # redirect home page and create session
             session['id_user'] = user["user_id"]
             session['name'] = user["name"]
             return redirect("/", code=302)
         else:
-            return render_template("login/login.html", log_message="Error login", class_ = 'alert alert-danger')
+            return render_template("login/login.html", log_message="Error login", class_='alert alert-danger')
 
-    return render_template("login/login.html", title="Login", log_message = "")
+    return render_template("login/login.html", title="Login", log_message="")
 
 
 @app.route("/logout")
@@ -95,14 +96,81 @@ def logout():
     session.clear()
     return redirect("/", code=302)
 
-@app.route("/search/book", methods = ["POST"])
+
+@app.route("/search/book", methods=["POST"])
 def search_book():
-    name =  session['name']
+    name = session['name']
     search = escape(request.form.get('search'))
-    book = db.execute(f"SELECT * FROM tbl_books WHERE (isbn LIKE '%{search}%') OR (title LIKE '%{search}%') OR (author LIKE '%{search}%')   LIMIT 50").fetchall()
+    book = db.execute(
+        f"SELECT * FROM tbl_books WHERE (isbn LIKE '%{search}%') OR (title LIKE '%{search}%') OR (author LIKE '%{search}%')   LIMIT 50").fetchall()
 
     if book is None:
-        return render_template("index.html", title="Home", name = name)
-    
-    return render_template("index.html", title="Home", name = name, books = book)
+        return render_template("index.html", title="Home", name=name)
 
+    return render_template("index.html", title="Home", name=name, books=book)
+
+# book page
+
+
+@app.route("/book/<book_id>")
+def bookPage(book_id):
+    name = session['name']
+    book = book_id
+    result = db.execute(
+        f"SELECT * FROM tbl_books WHERE book_id = '{book}'").fetchone()
+    rateB = db.execute(
+        f"SELECT tbl_reviews.rate as rate, tbl_reviews.review as review, tbl_user.username as user  FROM tbl_reviews LEFT JOIN tbl_user ON tbl_reviews.user_id = tbl_user.user_id WHERE book_id = '{book}' ")
+    average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
+                         "book_id": book}).fetchone()
+    review_count = db.execute(
+        "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": book}).fetchone()
+    if rateB.rowcount >= 1:
+        return render_template("book/book.html", title="Book Page", name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
+
+    return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0)
+
+# Rate & Review Methods
+
+
+@app.route('/review/save', methods=['POST'])
+def review():
+    if request.method == "POST":
+        book = request.form.get('id_book')
+        user = session['id_user']
+        rate = request.form.get('rate')
+        review = escape(request.form.get('review'))
+
+        # verify user has not rated before
+        rateB = db.execute(
+            f"SELECT * FROM tbl_reviews WHERE (user_id = '{user}') AND (book_id = '{book}')")
+        if rateB.rowcount >= 1:
+            return render_template("book/message.html", title="Error", message="User already rated this book")
+        # Proceed to save review
+        db.execute("INSERT INTO tbl_reviews (book_id, user_id, rate, review) VALUES (:book_id, :user_id, :rate, :review)",
+                   {"book_id": int(book), "user_id": user, "rate": int(rate), "review": review})
+        # Transaction sql
+        db.commit()
+        return render_template("book/message.html", title="Success", message="Done")
+# API Application
+
+
+@app.route("/api/<isbn>")
+def api(isbn):
+    book = isbn
+    result = db.execute(
+        f"SELECT * FROM tbl_books WHERE isbn = '{book}'").fetchone()
+    if result is None:
+        return "No book"
+    # average and count reviews
+    average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
+                         "book_id": result.book_id}).fetchone()
+    review_count = db.execute(
+        "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": result.book_id}).fetchone()
+
+  
+
+    data = {"title": result.title, "author": result.author,
+            "year": result.year_book, "isbn": result.isbn,
+            "average": float(average.res), "review_count": review_count.total}
+
+    return jsonify(data)
