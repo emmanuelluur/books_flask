@@ -115,24 +115,29 @@ def search_book():
 
 @app.route("/book/<book_id>")
 def bookPage(book_id):
-    name = session['name']
-    book = book_id
-    result = db.execute(
-        f"SELECT * FROM tbl_books WHERE book_id = '{book}'").fetchone()
-    if result is None:
-        return render_template("book/message.html", title="Error", message="No Book")
-    rateB = db.execute(
-        f"SELECT tbl_reviews.rate as rate, tbl_reviews.review as review, tbl_user.username as user  FROM tbl_reviews LEFT JOIN tbl_user ON tbl_reviews.user_id = tbl_user.user_id WHERE book_id = '{book}' ")
-    average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
-                         "book_id": book}).fetchone()
-    review_count = db.execute(
-        "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": book}).fetchone()
-    # goodreads api
-    goodreads = requests.get("https://www.goodreads.com/book/review_counts.json",
-                             params={"key": "rauBKNbB4l5F65wSw8CoWg", "isbns": result.isbn})
-    if rateB.rowcount >= 1:
-        return render_template("book/book.html", title="Book Page", goodreads=goodreads.json(), name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
-    return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0, goodreads=goodreads.json())
+
+    if 'id_user' in session:
+        name = session['name']
+        book = book_id
+        result = db.execute(
+            f"SELECT * FROM tbl_books WHERE book_id = '{book}'").fetchone()
+        if result is None:
+            return render_template("book/message.html", title="Error", message="No Book")
+        rateB = db.execute(
+            f"SELECT tbl_reviews.rate as rate, tbl_reviews.review as review, tbl_user.username as user  FROM tbl_reviews LEFT JOIN tbl_user ON tbl_reviews.user_id = tbl_user.user_id WHERE book_id = '{book}' ")
+        average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
+            "book_id": book}).fetchone()
+        review_count = db.execute(
+            "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": book}).fetchone()
+        # goodreads api
+        goodreads = requests.get("https://www.goodreads.com/book/review_counts.json",
+                                 params={"key": "rauBKNbB4l5F65wSw8CoWg", "isbns": result.isbn})
+        if rateB.rowcount >= 1:
+            return render_template("book/book.html", title="Book Page", goodreads=goodreads.json(), name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
+        return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0, goodreads=goodreads.json())
+    else:
+        return render_template("login/login.html", title="Login", log_message="You must be logged", class_='alert alert-danger')
+
 
 # Rate & Review Methods
 
