@@ -164,15 +164,22 @@ def api(isbn):
     result = db.execute(
         f"SELECT * FROM tbl_books WHERE isbn = '{book}'").fetchone()
     if result is None:
-        return "No book"
+        return 'Error 404'
     # average and count reviews
     average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
                          "book_id": result.book_id}).fetchone()
     review_count = db.execute(
         "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": result.book_id}).fetchone()
-    
+  
     data = {"title": result.title, "author": result.author,
             "year": result.year_book, "isbn": result.isbn,
             "average": average.res, "review_count": review_count.total}
 
     return jsonify(data)
+
+
+#404
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return 'Error 404',404
