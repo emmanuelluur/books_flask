@@ -1,6 +1,7 @@
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
+import requests
 
 from flask import Flask, session, render_template, request, escape, redirect, jsonify
 from flask_session import Session
@@ -118,16 +119,19 @@ def bookPage(book_id):
     book = book_id
     result = db.execute(
         f"SELECT * FROM tbl_books WHERE book_id = '{book}'").fetchone()
+    if result is None:
+        return render_template("book/message.html", title="Error", message="No Book")
     rateB = db.execute(
         f"SELECT tbl_reviews.rate as rate, tbl_reviews.review as review, tbl_user.username as user  FROM tbl_reviews LEFT JOIN tbl_user ON tbl_reviews.user_id = tbl_user.user_id WHERE book_id = '{book}' ")
     average = db.execute("SELECT AVG(rate) as res FROM tbl_reviews WHERE book_id = :book_id", {
                          "book_id": book}).fetchone()
     review_count = db.execute(
         "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": book}).fetchone()
+    # goodreads api
+    goodreads = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": "rauBKNbB4l5F65wSw8CoWg", "isbns": result.isbn})
     if rateB.rowcount >= 1:
-        return render_template("book/book.html", title="Book Page", name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
-
-    return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0)
+        return render_template("book/book.html", title="Book Page",goodreads = goodreads.json(), name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
+    return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0, goodreads = goodreads.json())
 
 # Rate & Review Methods
 
@@ -166,11 +170,9 @@ def api(isbn):
                          "book_id": result.book_id}).fetchone()
     review_count = db.execute(
         "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": result.book_id}).fetchone()
-
-  
-
+    
     data = {"title": result.title, "author": result.author,
             "year": result.year_book, "isbn": result.isbn,
-            "average": float(average.res), "review_count": review_count.total}
+            "average": average.res, "review_count": review_count.total}
 
     return jsonify(data)

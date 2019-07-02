@@ -26,7 +26,7 @@
 {% endblock navbar %}
 {% block content %}
 <section class="row space">
-    <article class="col-sm-6">
+    <article class="col-sm-4">
         <h3>Book Information</h3>
         <table class="table">
             <tbody>
@@ -79,6 +79,33 @@
             </div>
             <button type="submit" class="btn btn-success btn-lg btn-block">Send Review</button>
         </form>
+    </article>
+    <article class="col-sm-4">
+        <h3>Goodreads Information</h3>
+        {% if goodreads %}
+        <table class="table">
+            <thead>
+                <th>Reviews</th>
+                <th>Average</th>
+            </thead>
+            <tbody>
+                {% for item in goodreads['books'] %}
+                <tr>
+                    <td>
+                        {{ item['work_ratings_count'] }}
+                    </td>
+                    <td>
+                        {{ item['average_rating'] }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+        {% else %}
+        <div class="alert alert-info">No goodreads Information</div>
+        {% endif %}
     </article>
     <article class="col-sm-4">
         <h3>Reviews</h3>
