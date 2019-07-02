@@ -128,10 +128,11 @@ def bookPage(book_id):
     review_count = db.execute(
         "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": book}).fetchone()
     # goodreads api
-    goodreads = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": "rauBKNbB4l5F65wSw8CoWg", "isbns": result.isbn})
+    goodreads = requests.get("https://www.goodreads.com/book/review_counts.json",
+                             params={"key": "rauBKNbB4l5F65wSw8CoWg", "isbns": result.isbn})
     if rateB.rowcount >= 1:
-        return render_template("book/book.html", title="Book Page",goodreads = goodreads.json(), name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
-    return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0, goodreads = goodreads.json())
+        return render_template("book/book.html", title="Book Page", goodreads=goodreads.json(), name=name, books=result, reviews=rateB, average=float(average.res), review_count=int(review_count.total))
+    return render_template("book/book.html", title="Book Page", name=session['name'], books=result, average=0, review_count=0, goodreads=goodreads.json())
 
 # Rate & Review Methods
 
@@ -170,16 +171,21 @@ def api(isbn):
                          "book_id": result.book_id}).fetchone()
     review_count = db.execute(
         "SELECT COUNT(*) as total FROM tbl_reviews WHERE book_id = :book_id", {"book_id": result.book_id}).fetchone()
-  
-    data = {"title": result.title, "author": result.author,
-            "year": result.year_book, "isbn": result.isbn,
-            "average": average.res, "review_count": review_count.total}
 
+    if average.res is None:
+        data = {"title": result.title, "author": result.author,
+                "year": result.year_book, "isbn": result.isbn,
+                "average": 0, "review_count": 0}
+    else:
+        data = {"title": result.title, "author": result.author,
+                "year": result.year_book, "isbn": result.isbn,
+                "average": float(average.res), "review_count": review_count.total}
+    # float(average.fetchone().res)""
     return jsonify(data)
 
 
-#404
+# 404
 @app.errorhandler(404)
 def page_not_found(e):
     # note that we set the 404 status explicitly
-    return 'Error 404',404
+    return 'Error 404', 404
